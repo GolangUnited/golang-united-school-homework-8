@@ -8,7 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strings"
+	
 )
 
 type User struct {
@@ -28,6 +28,8 @@ var (
 	ErrOperationMissing = errors.New("-operation flag has to be specified")
 
 )
+type Arguments map[string]string
+
 
 func parseArgs() Arguments {
 	u := User{}
@@ -37,19 +39,17 @@ func parseArgs() Arguments {
 		FileNameFlag string
 	)
 	
-	flag.StringVar(&OperationFlag, "operation", "list", "takes operations (add, list, findById, remove")
+	flag.StringVar(&OperationFlag, "operation", "list", "takes operations (add, list, findById, remove)")
 	flag.StringVar(&ItemFlag, "item","", "takes user info")
-	flag.StringVar(&FileNameFlag, "fileName","", "tales file name")
-	
+	flag.StringVar(&FileNameFlag, "fileName","users.json", "tales file name")
 	
 	flag.Parse()
 	
-	dec := json.NewDecoder(strings.NewReader(ItemFlag))
-	dec.Decode(&u)
-		
-		
-	
-
+	data := []byte(ItemFlag)
+	err := json.Unmarshal(data, &u)
+	if err != nil {
+		fmt.Println(err)
+	}
 	arg := Arguments{
 		"id": u.ID,
 		"operation": OperationFlag,
@@ -60,8 +60,6 @@ func parseArgs() Arguments {
 	return arg
 }
 
-
-type Arguments map[string]string
 
 func Perform(args Arguments, writer io.Writer) error {
 	err := CheckErrors(args)
@@ -75,7 +73,7 @@ func Perform(args Arguments, writer io.Writer) error {
 			return err
 		}
 	case add:
-		err := Add(args)
+		err := Add(args, writer)
 		if err != nil {
 			return err
 		}
@@ -84,8 +82,9 @@ func Perform(args Arguments, writer io.Writer) error {
 	return nil
 }
 
-func Add(arg Arguments) error {
-	u := []User{}
+func Add(arg Arguments, writer io.Writer) error {
+	fu := []User{}
+
 	if arg["item"] == ""{
 		return fmt.Errorf("-item flag has to be specified")
 	}
@@ -96,19 +95,26 @@ func Add(arg Arguments) error {
 	defer f.Close()
 
 	data, err := ioutil.ReadAll(f)
-	json.Unmarshal(data, &u)
-	for _, r := range u {
-		if r.ID == arg["id"] {
+	if err != nil {
+		return err
+	}
+	json.Unmarshal(data, &fu)
+	
+	for _, r := range fu {
+		if arg["id"] == r.ID{
 			return fmt.Errorf("Item with id %s already exists", r.ID)
 		}
 	}
-
+	
+	content := fmt.Sprintf("[%s]", arg["item"])
+	newData := []byte(content)
+	f.Write(newData)
 	
 	return nil
 }
 
 func List(fileName string, writer io.Writer) error {
-	f, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0644)
+	f, err := os.Open(fileName)
 	if err != nil {
 		return err
 	}
@@ -139,13 +145,19 @@ func CheckErrors(arg Arguments) error {
 }
 
 func main() {
-	// err := Perform(parseArgs(), os.Stdout)
-	// if err != nil {
-	// 	panic(err)
-	// }
+	err := Perform(parseArgs(), os.Stdout)
+	if err != nil {
+		panic(err)
+	}
 
-	arg := parseArgs()
-	fmt.Println(arg)
+	// arg := parseArgs()
+	// fmt.Println(arg)
+	// err := Add(arg)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// List(arg["fileName"], os.Stdout)
+
 }
 
 
