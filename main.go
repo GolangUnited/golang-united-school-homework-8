@@ -33,26 +33,23 @@ type Arguments map[string]string
 
 
 func parseArgs() Arguments {
-	u := User{}
+	
 	var(
 		OperationFlag string
 		ItemFlag string
 		FileNameFlag string
+		IdFlag string
 	)
 	
 	flag.StringVar(&OperationFlag, "operation", "list", "takes operations (add, list, findById, remove)")
 	flag.StringVar(&ItemFlag, "item","", "takes user info")
 	flag.StringVar(&FileNameFlag, "fileName","users.json", "tales file name")
-	
+	flag.StringVar(&IdFlag, "id", "", "takes an id")
 	flag.Parse()
 	
-	data := []byte(ItemFlag)
-	err := json.Unmarshal(data, &u)
-	if err != nil {
-		fmt.Println(err)
-	}
+	
 	arg := Arguments{
-		"id": u.ID,
+		"id": IdFlag,
 		"operation": OperationFlag,
 		"item": ItemFlag,
 		"fileName": FileNameFlag,
@@ -74,11 +71,8 @@ func Perform(args Arguments, writer io.Writer) error {
 			return err
 		}
 	case add:
-		err := Add(args)
-		message := fmt.Sprintf("Item with id %s already exists", args["id"])
-		if err == errors.New(message) {
-			writer.Write([]byte(message))
-		}
+		err := Add(args, writer)
+
 		if err != nil {
 			return err
 		}
@@ -88,13 +82,16 @@ func Perform(args Arguments, writer io.Writer) error {
 	return nil
 }
 
-func Add(arg Arguments) error {
+func Add(arg Arguments, w io.Writer) error {
 	fu := []User{}
+	newUser := User{}
+	newData := []byte(arg["item"])
+	json.Unmarshal(newData, &newUser)
 
 	if arg["item"] == ""{
 		return fmt.Errorf("-item flag has to be specified")
 	}
-
+	
 	f, err := os.OpenFile(arg["fileName"], os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return err
@@ -109,16 +106,13 @@ func Add(arg Arguments) error {
 	
 
 	for _, r := range fu {
-		fmt.Println("arg ID: ", arg["id"], "r.ID: ", r.ID)
-		if arg["id"] == r.ID{
-			return fmt.Errorf("Item with id %s already exists", r.ID)
+		if newUser.ID == r.ID{
+			message := fmt.Sprintf("Item with id %s already exists", r.ID)
+			w.Write([]byte(message))
 		}
 	}
 	os.Remove(arg["fileName"])
 	newF, _ := os.Create(arg["fileName"])
-	newUser := User{}
-	newData := []byte(arg["item"])
-	json.Unmarshal(newData, &newUser)
 	fu = append(fu, newUser)
 
 	dataForFile, _ := json.Marshal(fu)
@@ -143,7 +137,6 @@ func List(fileName string, writer io.Writer) error {
 	return nil
 }
 
-func Remove()
 
 func CheckErrors(arg Arguments) error {
 	if v := arg["operation"]; v==""{
