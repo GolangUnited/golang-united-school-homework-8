@@ -44,14 +44,11 @@ func parseArgs() Arguments {
 	
 	flag.Parse()
 	
-	flag.Func("user", "takes user info", func(s string) error {
-		dec := json.NewDecoder(strings.NewReader(s))
-		err := dec.Decode(&u)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	dec := json.NewDecoder(strings.NewReader(ItemFlag))
+	dec.Decode(&u)
+		
+		
+	
 
 	arg := Arguments{
 		"id": u.ID,
