@@ -26,6 +26,7 @@ const (
 
 var (
 	ErrOperationMissing = errors.New("-operation flag has to be specified")
+	
 
 )
 type Arguments map[string]string
@@ -73,21 +74,27 @@ func Perform(args Arguments, writer io.Writer) error {
 			return err
 		}
 	case add:
-		err := Add(args, writer)
+		err := Add(args)
+		message := fmt.Sprintf("Item with id %s already exists", args["id"])
+		if err == errors.New(message) {
+			writer.Write([]byte(message))
+		}
 		if err != nil {
 			return err
 		}
+	case remove:
 		
 	}
 	return nil
 }
 
-func Add(arg Arguments, writer io.Writer) error {
+func Add(arg Arguments) error {
 	fu := []User{}
 
 	if arg["item"] == ""{
 		return fmt.Errorf("-item flag has to be specified")
 	}
+
 	f, err := os.OpenFile(arg["fileName"], os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return err
@@ -100,15 +107,23 @@ func Add(arg Arguments, writer io.Writer) error {
 	}
 	json.Unmarshal(data, &fu)
 	
+
 	for _, r := range fu {
+		fmt.Println("arg ID: ", arg["id"], "r.ID: ", r.ID)
 		if arg["id"] == r.ID{
 			return fmt.Errorf("Item with id %s already exists", r.ID)
 		}
 	}
+	os.Remove(arg["fileName"])
+	newF, _ := os.Create(arg["fileName"])
+	newUser := User{}
+	newData := []byte(arg["item"])
+	json.Unmarshal(newData, &newUser)
+	fu = append(fu, newUser)
+
+	dataForFile, _ := json.Marshal(fu)
+	newF.Write(dataForFile)
 	
-	content := fmt.Sprintf("[%s]", arg["item"])
-	newData := []byte(content)
-	f.Write(newData)
 	
 	return nil
 }
@@ -127,6 +142,8 @@ func List(fileName string, writer io.Writer) error {
 	
 	return nil
 }
+
+func Remove()
 
 func CheckErrors(arg Arguments) error {
 	if v := arg["operation"]; v==""{
