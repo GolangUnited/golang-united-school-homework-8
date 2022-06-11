@@ -236,15 +236,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	// arg := parseArgs()
-	// fmt.Println(arg)
-	// err := Add(arg)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	// List(arg["fileName"], os.Stdout)
-
 }
 
 
