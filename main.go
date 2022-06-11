@@ -115,6 +115,7 @@ func Remove(arg Arguments, w io.Writer) error {
 	if !exist {
 		message := fmt.Sprintf("Item with id %s not found", arg["id"])
 		w.Write([]byte(message))
+		return errors.New(message)
 	}
 
 	os.Remove(arg["fileName"])
@@ -153,6 +154,7 @@ func Add(arg Arguments, w io.Writer) error {
 		if newUser.ID == r.ID{
 			message := fmt.Sprintf("Item with id %s already exists", r.ID)
 			w.Write([]byte(message))
+			return nil 
 		}
 	}
 	os.Remove(arg["fileName"])
