@@ -77,8 +77,52 @@ func Perform(args Arguments, writer io.Writer) error {
 			return err
 		}
 	case remove:
+		err := Remove(args, writer)
+		if err != nil{
+			return err
+		}
 		
 	}
+	return nil
+}
+
+func Remove(arg Arguments, w io.Writer) error {
+	dataUser := []User{}
+	if arg["id"] == "" {
+		return fmt.Errorf("-id flag has to be specified")
+	}
+
+	f, err := os.Open(arg["fileName"])
+	if err != nil {
+		return err
+	}	
+
+	exixstingData, err := ioutil.ReadAll(f)
+	if err != nil {
+		return err
+	}
+	json.Unmarshal(exixstingData, &dataUser)
+	
+	inx := 0
+	exist := false
+	for i, u := range dataUser {
+		if u.ID == arg["id"]{
+			exist = true
+			inx = i
+		}
+	}
+
+	if !exist {
+		message := fmt.Sprintf("Item with id %s not found", arg["id"])
+		w.Write([]byte(message))
+	}
+
+	os.Remove(arg["fileName"])
+	newF, _ := os.Create(arg["fileName"])
+	dataUser = append(dataUser[:inx],dataUser[inx+1:]... )
+	dataForFile, _ := json.Marshal(dataUser)
+	newF.Write(dataForFile)
+
 	return nil
 }
 
