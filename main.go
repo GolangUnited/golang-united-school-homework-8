@@ -81,8 +81,39 @@ func Perform(args Arguments, writer io.Writer) error {
 		if err != nil{
 			return err
 		}
+	case findById:
+		err := FindById(args, writer)
+		if err != nil {
+			return err
+		}
 		
 	}
+	return nil
+}
+
+func FindById(arg Arguments, w io.Writer) error {
+	content := []User{}
+	if arg["id"] == "" {
+		return fmt.Errorf("-id flag has to be specified")
+	}
+	f, err := os.Open(arg["fileName"])
+	if err != nil {
+		return err
+	}	
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return err
+	}
+	json.Unmarshal(data, &content)
+	for _, d := range content {
+		if d.ID == arg["id"] {
+			str := fmt.Sprintf("{\"id\":\"%s\",\"email\":\"%s\",\"age\":%v}", d.ID, d.Email, d.Age)
+			w.Write([]byte(str))
+			return nil
+			
+		}
+	}
+	w.Write([]byte(""))
 	return nil
 }
 
@@ -115,7 +146,7 @@ func Remove(arg Arguments, w io.Writer) error {
 	if !exist {
 		message := fmt.Sprintf("Item with id %s not found", arg["id"])
 		w.Write([]byte(message))
-		return errors.New(message)
+		return nil
 	}
 
 	os.Remove(arg["fileName"])
